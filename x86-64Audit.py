@@ -1,3 +1,4 @@
+# -*- coding:utf-8 -*-
 """
 
 Created by i3r0ny@ 2022/10/22
@@ -73,6 +74,7 @@ def GetArg(start_addr, num):
     arg_addr = GetArgAddr(start_addr, num)
     
     if arg_addr != BADADDR:
+        idc.set_color(arg_addr, idc.CIC_ITEM, 0x008e74)
         Mnemonics = idc.print_insn_mnem(arg_addr)
         if Mnemonics[0:3] == "add":
             if idc.print_operand(arg_addr, 2) == "":
@@ -186,23 +188,20 @@ def audit(func_name):
     got_addr = get_first_dref_to(func_addr)
     plt_addr = get_first_dref_to(got_addr)
     call_addr = get_first_cref_to(plt_addr)
-    
-    # print(got_addr, plt_addr, call_addr)
 
-    while call_addr != BADADDR:
-        idc.set_color(call_addr, idc.CIC_ITEM, 0x90e667)
+    # print(hex(call_addr), idc.GetDisasm(call_addr))
+    for xref in idautils.XrefsTo(call_addr, 1):
+        idc.set_color(xref.frm, idc.CIC_ITEM, 0x90e667)
+        # print(hex(xref.frm), idc.GetDisasm(xref.frm))
         
-        Mnemonics = idc.print_insn_mnem(call_addr)
+        Mnemonics = idc.print_insn_mnem(xref.frm)
         
         if Mnemonics == "call":
             if func_name in format_function_offset_dict:
-                info = AuditFormat(call_addr, func_name, arg_num)
+                info = AuditFormat(xref.frm, func_name, arg_num)
             else:
-                info = AuditAddr(call_addr, func_name, arg_num)
+                info = AuditAddr(xref.frm, func_name, arg_num)
             table.add_row(info)
-        # elif Mnemonics == "endbr64":
-
-        call_addr = get_next_cref_to(plt_addr, call_addr)
     
     print(table)
         
